@@ -1,96 +1,349 @@
 package Software;
 
-import People.*;
+import javax.swing.*;
 
+import People.Manager;
+import People.Passenger;
+import People.Person;
 
-import Hardware.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.RGBImageFilter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.awt.image.FilteredImageSource;
 
-public class Driver {
+public class MainGUI extends JFrame {
 	
-	public static void main(String args[]) {
-		// manager login
-		String manager_name="Matthew";
-		String manager_username="mwasko";
-		String manager_password="admin";
-		String manager_email="mwasko@arizona.edu";
-		
-		// create manager
-		Manager m1 = new Manager();
-		m1.setName(manager_name);
-		m1.setUsername(manager_username);
-		m1.setPassword(manager_password);
-		m1.setEmail(manager_email);
-		
-		// should be empty train managed list
-		m1.getTrainsManaged();
-		
-		// create a new route
-		Route route1 = m1.createRoute("TUS", "PHX", 1500, 1700, 10);
-		Route route2 = m1.createRoute("PHX", "NY", 1800, 2300, 10);
-		Route route3 = m1.createRoute("NY", "CHI", 2400, 500, 10);
-		Route route4 = m1.createRoute("CHI", "TUS", 500, 1800, 10);
-		Train t1 = m1.createTrain(1830);
-		System.out.println("Testing route add/removal validity:");
-		m1.addRouteToTrain(t1, route1);
-		m1.addRouteToTrain(t1, route2);
-		m1.addRouteToTrain(t1, route3);
-		m1.addRouteToTrain(t1, route4);
-		t1.removeRoute(route4);
-		t1.removeRoute(route2);
-		System.out.println("");
-		System.out.println("View available trains in the station:");
-		m1.viewTrains();
-		System.out.println("");
-		System.out.println("Train 1 schedule:");
-		t1.printSchedule();
-		String passenger1_name="Passenger1";
-		String passenger1_password="passeng";
-		String passenger1_username="user1";
-		String passenger1_email="passenger1@arizona.edu";
-		
-		// create passenger1
-		Passenger p1 = new Passenger();
-		p1.setName(passenger1_name);
-		p1.setPassword(passenger1_password);
-		p1.setUsername(passenger1_username);
-		p1.setEmail(passenger1_email);
-		
-		p1.bookTrain(t1, t1.getRouteList().get(0));
-		System.out.println("");
-		System.out.println("Printing the booking details for p1:");
-		
-		p1.viewBooking();
-		
-		String passenger2_name="Passenger2";
-		String passenger2_password="passeng";
-		String passenger2_username="user2";
-		String passenger2_email="passenger2@arizona.edu";
-		
-		// create passenger2
-		Passenger p2 = new Passenger();
-		p2.setName(passenger2_name);
-		p2.setPassword(passenger2_password);
-		p2.setUsername(passenger2_username);
-		p2.setEmail(passenger2_email);
-		
-		p2.bookTrain(t1, t1.getRouteList().get(0));
-		System.out.println("");
-		System.out.println("Printing passengers:");
-		t1.printPassengers();
-		
-		p1.cancelBooking(t1);
-		System.out.println("");
-		System.out.println("Checking if the booking for p1 has been cancelled:");
-		p1.viewBooking();
-		System.out.println("");
-		System.out.println("Printing passengers after p1 cancelled:");
-		t1.printPassengers();
-		System.out.println("");
-		System.out.println("Printing the duration for the t1 route: ");
-		t1.getRouteList().get(0).getDuration();
-		System.out.println("");
-		System.out.println("Route available to passengers: ");
-		p1.viewRoutes(m1.getRouteList());
-		
-	}
+    public MainGUI() {
+        setTitle("WILDCAT RAILWAY");
+        setSize(1000, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(new Color(173, 216, 230)); // Light blue background
+        setLocationRelativeTo(null);
+
+        JLabel titleLabel = new JLabel("WILDCAT RAILWAY");
+        titleLabel.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 50));
+        titleLabel.setHorizontalAlignment(JLabel.CENTER);
+        add(titleLabel, BorderLayout.NORTH);
+
+        LoginPanel loginPanel = new LoginPanel();
+        loginPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+        loginPanel.setPreferredSize(new Dimension(700, 350));
+
+        // Adding train image to the left
+        ImageIcon bottomLeftGraphic = createImageIcon("trainImage1.png");
+        ImageIcon modifiedIcon = makeWhitePixelsTransparent(bottomLeftGraphic);
+        JLabel bottomLeftLabel = new JLabel(modifiedIcon);
+
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.setBackground(new Color(173, 216, 230));
+
+        imagePanel.add(bottomLeftLabel, BorderLayout.WEST);
+
+        // Adding wildcat Logo to the right
+        ImageIcon bottomRightGraphic = createImageIcon("wildcatLogo.png");
+        ImageIcon modifiedIcon2 = makeWhitePixelsTransparent(bottomRightGraphic);
+        JLabel bottomRightLabel = new JLabel(modifiedIcon2);
+
+        imagePanel.add(bottomRightLabel, BorderLayout.EAST);
+
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.add(loginPanel);
+        
+        add(centerPanel, BorderLayout.CENTER);
+        add(imagePanel, BorderLayout.SOUTH);
+    }
+
+    private ImageIcon createImageIcon(String filename) {
+        URL url = getClass().getClassLoader().getResource(filename);
+        if (url != null) {
+            return new ImageIcon(url);
+        } else {
+            System.err.println("Resource not found: " + filename);
+            return null; 
+        }
+    }
+    
+    private ImageIcon makeWhitePixelsTransparent(ImageIcon icon) {
+        Image image = icon.getImage();
+
+        RGBImageFilter filter = new RGBImageFilter() {
+            @Override
+            public int filterRGB(int x, int y, int rgb) {
+                if ((rgb & 0xFFFFFF) == 0xFFFFFF) {
+                    return 0x00FFFFFF & rgb;
+                } else {
+                    return rgb;
+                }
+            }
+        };
+
+        Image modifiedImage = Toolkit.getDefaultToolkit().createImage(
+                new FilteredImageSource(image.getSource(), filter));
+
+        return new ImageIcon(modifiedImage);
+    }
+
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                MainGUI mainGUI = new MainGUI();
+                mainGUI.setVisible(true);
+            }
+        });
+    }
 }
+
+class LoginPanel extends JPanel {
+	private ArrayList<Person> people_list = new ArrayList<Person>();
+	private Person loggedin;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+
+    
+    public LoginPanel() {
+        setLayout(new BorderLayout());
+        setOpaque(false);
+
+        JPanel loginFieldsPanel = new JPanel();
+        loginFieldsPanel.setLayout(new GridLayout(2, 2, 10, 10));
+
+        JLabel usernameLabel = new JLabel("Username:");
+        JLabel passwordLabel = new JLabel("Password:");
+
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        passwordLabel.setFont(new Font("Arial", Font.BOLD, 18));
+
+        usernameField = new JTextField();
+        passwordField = new JPasswordField();
+
+        loginFieldsPanel.add(usernameLabel);
+        loginFieldsPanel.add(usernameField);
+        loginFieldsPanel.add(passwordLabel);
+        loginFieldsPanel.add(passwordField);
+
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new GridLayout(2, 1, 10, 10));
+
+        JButton loginButton = new JButton("Login") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (getModel().isArmed()) {
+                    g.setColor(Color.lightGray);
+                    g.fillOval(0, 0, getSize().width - 1, getSize().height - 1);
+                }
+                super.paintComponent(g);
+            }
+
+            @Override
+            protected void paintBorder(Graphics g) {
+                g.setColor(Color.darkGray);
+                g.drawOval(0, 0, getSize().width - 1, getSize().height - 1);
+            }
+        };
+
+        JButton createAccountButton = new JButton("Create Account");
+
+        buttonsPanel.add(loginButton);
+        buttonsPanel.add(createAccountButton);
+
+        JPanel generalPanel = new JPanel();
+        generalPanel.setLayout(new BoxLayout(generalPanel, BoxLayout.Y_AXIS));
+        generalPanel.setOpaque(false);
+        
+        generalPanel.add(loginFieldsPanel);
+        generalPanel.add(buttonsPanel);
+
+        add(generalPanel);
+
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                login();
+            }
+        });
+
+        createAccountButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createAccount();
+            }
+        });
+    }
+
+
+    private void login() {
+        String username = usernameField.getText();
+        char[] password = passwordField.getPassword();
+
+        if (isValidLogin(username, new String(password))) {
+            JOptionPane.showMessageDialog(this, "Login Successful");
+            if(loggedin instanceof Passenger) {
+            	PassengerMainMenu();
+            } 
+            else if (loggedin instanceof Manager) {
+            	ManagerMainMenu();
+            }
+            SwingUtilities.getWindowAncestor(this).dispose();
+            
+        } else {
+            JOptionPane.showMessageDialog(this, "Login Failed");
+        }
+    }
+
+    private void createAccount() {
+    	// replace me with actual logic
+        // JOptionPane.showMessageDialog(this, "Create Account functionality not implemented yet.");
+    	String[] items = {"Passenger", "Manager"};
+
+        // Create a JComboBox with the array of items
+        JComboBox<String> comboBox = new JComboBox<>(items);
+
+        // Create a custom JPanel to hold the JComboBox
+        JPanel create_account_panel = new JPanel(new GridLayout(5,1));
+        create_account_panel.add(new JLabel("Select account type:"));
+        create_account_panel.add(comboBox);
+
+        JTextField username = new JTextField(); JPasswordField password = new JPasswordField(); JTextField name = new JTextField(); JTextField email = new JTextField(); ;
+        
+        JLabel namelabel = new JLabel("Name:");
+        create_account_panel.add(namelabel);
+        create_account_panel.add(name);
+        
+        JLabel userlabel = new JLabel("Username:");
+        create_account_panel.add(userlabel);
+        create_account_panel.add(username);
+        
+        JLabel passwordlabel = new JLabel("Password:");
+        create_account_panel.add(passwordlabel);
+        create_account_panel.add(password);
+        
+        JLabel emaillabel = new JLabel("Email:");
+        create_account_panel.add(emaillabel);
+        create_account_panel.add(email);
+        
+        // Show the JOptionPane with the custom panel
+        int result = JOptionPane.showOptionDialog(null, create_account_panel, "Create New Account",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null,null,null);
+
+        String username_str = username.getText(); char[] password_char = password.getPassword(); String name_str = name.getText(); String email_str = email.getText();
+        String password_str = String.valueOf(password_char);
+        
+        // Check the result when OK is clicked
+        if (result == JOptionPane.OK_OPTION) {
+            String selectedValue = (String) comboBox.getSelectedItem();
+            if(selectedValue.equals("Passenger")) {
+            	Passenger p = new Passenger();
+            	p.setName(name_str); p.setUsername(username_str); p.setPassword(password_str); p.setEmail(email_str);
+            	people_list.add(p);
+            	
+            	Passenger.saveData(people_list);
+            	
+            	JOptionPane.showMessageDialog(null, "Created a " + selectedValue + " account for " + name_str);
+            }
+            else if(selectedValue.equals("Manager")) {
+            	Manager m = new Manager();
+            	m.setName(name_str); m.setUsername(username_str); m.setPassword(password_str); m.setEmail(email_str);
+            	people_list.add(m);
+            	
+            	Manager.saveData(people_list);
+            	
+            	JOptionPane.showMessageDialog(null, "Created a " + selectedValue + " account for " + name_str);
+            }
+        }
+    }
+   
+    private boolean isValidLogin(String username, String password) {
+        // replace me with actual logic
+        // stupid hardcoded example
+    	people_list = Person.loadData();
+    	
+    	for(int i = 0; i < people_list.size(); i++) {
+    		if(people_list.get(i).getUsername().equals(username) && people_list.get(i).getPassword().equals(password)) {
+    			loggedin = people_list.get(i);
+    			return true;
+    		}
+    	}
+    	return false; // default case
+    }
+    
+    private void PassengerMainMenu() {
+    	JFrame main_menu = new JFrame("Train Reservation System");
+
+        main_menu.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        main_menu.setSize(1000, 700);
+        main_menu.setLocationRelativeTo(null);
+
+        JPanel pane1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        main_menu.setContentPane(pane1);
+        
+        pane1.setBackground(new Color(173, 216, 230));
+        
+        JLabel biglabel = new JLabel("  WELCOME, " + loggedin.getName().toUpperCase() + "!");
+        biglabel.setFont(new Font("Arial", Font.ITALIC, 30));
+        biglabel.setHorizontalAlignment(JLabel.CENTER);
+        
+        pane1.add(biglabel, BorderLayout.NORTH);
+
+        main_menu.setVisible(true);
+        
+        main_menu.setContentPane(pane1);
+        
+        JButton view_train_button = new JButton("View available trains");
+        JButton book_train_button = new JButton("Book a train");
+        JButton view_booking_button = new JButton("View bookings");
+        
+        view_train_button.setPreferredSize(new Dimension(200, 40));
+        book_train_button.setPreferredSize(new Dimension(200, 40));
+        view_booking_button.setPreferredSize(new Dimension(200, 40));
+        
+        pane1.add(view_train_button);
+        pane1.add(book_train_button);
+        pane1.add(view_booking_button);
+    }
+    
+    private void ManagerMainMenu() {
+    	JFrame main_menu = new JFrame("Train Reservation System");
+
+        main_menu.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        main_menu.setSize(1000, 700);
+        main_menu.setLocationRelativeTo(null);
+
+        JPanel pane1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        main_menu.setContentPane(pane1);
+        
+        pane1.setBackground(new Color(173, 216, 230));
+        
+        JLabel biglabel = new JLabel("  WELCOME, " + loggedin.getName().toUpperCase() + "!");
+        biglabel.setFont(new Font("Arial", Font.ITALIC, 30));
+        biglabel.setHorizontalAlignment(JLabel.CENTER);
+        
+        pane1.add(biglabel, BorderLayout.NORTH);
+
+        main_menu.setVisible(true);
+        
+        main_menu.setContentPane(pane1);
+        
+        JButton manage_train = new JButton("Manage trains");
+        JButton cancel_train = new JButton("Cancel a train");
+        JButton create_new_train = new JButton("Create a new train");
+        
+        manage_train.setPreferredSize(new Dimension(200, 40));
+        cancel_train.setPreferredSize(new Dimension(200, 40));
+        create_new_train.setPreferredSize(new Dimension(200, 40));
+        
+        pane1.add(manage_train);
+        pane1.add(cancel_train);
+        pane1.add(create_new_train);
+    }
+}
+
+
